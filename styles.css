@@ -214,6 +214,11 @@ body {
     color: var(--success);
 }
 
+.exam-card-badge.in-progress {
+    background: var(--warning);
+    color: var(--primary);
+}
+
 .exam-card-badge.best-score {
     background: #e8f4fd;
     color: var(--info);

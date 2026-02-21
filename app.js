@@ -101,11 +101,23 @@
 
             const historyKey = `exam-${exam.examNumber}`;
             const pastResult = state.history[historyKey];
+            const progress = loadProgress(index);
 
             let badgeHtml = "";
             let footerHtml = "";
 
-            if (pastResult) {
+            if (progress && Object.keys(progress.userAnswers).length > 0) {
+                const answeredCount = Object.keys(progress.userAnswers).length;
+                const percent = Math.round((answeredCount / exam.totalQuestions) * 100);
+                badgeHtml = `<span class="exam-card-badge in-progress">In Progress (${percent}%)</span>`;
+                if (pastResult) {
+                    footerHtml = `
+                        <div class="exam-card-footer">
+                            <span class="exam-card-score">Best: <strong>${pastResult.bestScore}%</strong></span>
+                            <span class="exam-card-score">Last: <strong>${pastResult.lastScore}%</strong></span>
+                        </div>`;
+                }
+            } else if (pastResult) {
                 badgeHtml = `<span class="exam-card-badge completed">Completed</span>`;
                 footerHtml = `
                     <div class="exam-card-footer">
@@ -144,14 +156,50 @@
         dom.completedExams.textContent = completed;
     }
 
+    // ===== Save & Load Progress =====
+    function saveProgress() {
+        if (state.currentExamIndex === null) return;
+        const progressKey = `aws-exam-progress-${state.currentExamIndex}`;
+        const progress = {
+            currentQuestionIndex: state.currentQuestionIndex,
+            userAnswers: state.userAnswers,
+            checkedQuestions: state.checkedQuestions,
+            timerSeconds: state.timerSeconds
+        };
+        localStorage.setItem(progressKey, JSON.stringify(progress));
+    }
+
+    function loadProgress(examIndex) {
+        const progressKey = `aws-exam-progress-${examIndex}`;
+        const saved = localStorage.getItem(progressKey);
+        if (saved) {
+            return JSON.parse(saved);
+        }
+        return null;
+    }
+
+    function clearProgress(examIndex) {
+        const progressKey = `aws-exam-progress-${examIndex}`;
+        localStorage.removeItem(progressKey);
+    }
+
     // ===== Start Exam =====
     function startExam(examIndex) {
         state.currentExamIndex = examIndex;
-        state.currentQuestionIndex = 0;
-        state.userAnswers = {};
-        state.checkedQuestions = {};
-        state.timerSeconds = 0;
         state.examResults = null;
+
+        const savedProgress = loadProgress(examIndex);
+        if (savedProgress) {
+            state.currentQuestionIndex = savedProgress.currentQuestionIndex || 0;
+            state.userAnswers = savedProgress.userAnswers || {};
+            state.checkedQuestions = savedProgress.checkedQuestions || {};
+            state.timerSeconds = savedProgress.timerSeconds || 0;
+        } else {
+            state.currentQuestionIndex = 0;
+            state.userAnswers = {};
+            state.checkedQuestions = {};
+            state.timerSeconds = 0;
+        }
 
         const exam = EXAMS_DATA[examIndex];
         dom.examTitle.textContent = exam.title;
@@ -168,6 +216,7 @@
         state.timerInterval = setInterval(() => {
             state.timerSeconds++;
             dom.timerDisplay.textContent = formatTime(state.timerSeconds);
+            if (state.timerSeconds % 5 === 0) saveProgress();
         }, 1000);
     }
 
@@ -213,6 +262,7 @@
 
     function goToQuestion(index) {
         state.currentQuestionIndex = index;
+        saveProgress();
         renderQuestion();
     }
 
@@ -322,6 +372,7 @@
             state.userAnswers[qIndex] = [letter];
         }
 
+        saveProgress();
         renderQuestion();
     }
 
@@ -333,6 +384,7 @@
         if (userAns.length === 0) return; // Nothing selected
 
         state.checkedQuestions[qIndex] = true;
+        saveProgress();
         renderQuestion();
     }
 
@@ -376,6 +428,9 @@
         const passed = percent >= 70; // AWS passing threshold
 
         state.examResults = { correct, incorrect, skipped, total, percent, passed };
+
+        // Clear in-progress data
+        clearProgress(state.currentExamIndex);
 
         // Save to history
         const historyKey = `exam-${exam.examNumber}`;
@@ -487,7 +542,7 @@
                 const correctOptionTexts = correctAns
                     .map((letter) => `<strong>${letter}.</strong> ${q.options[letter]}`)
                     .join("<br>");
-                
+
                 let yourAnswerHtml = "";
                 if (status === "incorrect") {
                     const yourOptionTexts = userAns
@@ -565,7 +620,7 @@
         });
 
         dom.btnBack.addEventListener("click", () => {
-            if (confirm("Are you sure you want to exit? Your progress will be lost.")) {
+            if (confirm("Are you sure you want to exit? Your progress will be saved automatically.")) {
                 stopTimer();
                 // Reset score ring for next time
                 dom.scoreRing.style.strokeDashoffset = 2 * Math.PI * 54;
@@ -578,8 +633,11 @@
         dom.btnReview.addEventListener("click", showReview);
 
         dom.btnRetake.addEventListener("click", () => {
-            dom.scoreRing.style.strokeDashoffset = 2 * Math.PI * 54;
-            startExam(state.currentExamIndex);
+            if (confirm("Are you sure you want to retake this exam? Any saved progress will be reset.")) {
+                dom.scoreRing.style.strokeDashoffset = 2 * Math.PI * 54;
+                clearProgress(state.currentExamIndex);
+                startExam(state.currentExamIndex);
+            }
         });
 
         dom.btnHome.addEventListener("click", () => {
