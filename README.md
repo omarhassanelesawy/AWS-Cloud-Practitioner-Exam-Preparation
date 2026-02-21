@@ -1,5 +1,7 @@
 # AWS Cloud Practitioner Practice Exam Simulator
 
+**Live Demo:** [https://aws-cloud-practitioner-exam-prepara.vercel.app/](https://aws-cloud-practitioner-exam-prepara.vercel.app/)
+
 Welcome to the **AWS Cloud Practitioner Practice Exam Simulator**! This is a simple, browser-based web application designed to help you prepare for the AWS Certified Cloud Practitioner (CLF-C02) exam.
 
 ## Features
