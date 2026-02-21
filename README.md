@@ -15,8 +15,10 @@ Welcome to the **AWS Cloud Practitioner Practice Exam Simulator**! This is a sim
 - `index.html`: The main user interface structure.
 - `styles.css`: Styling for the application, featuring a clean, responsive, and modern design.
 - `app.js`: The core logic, handling state, exam navigation, score calculation, and local storage history.
-- `exams_data.js`: The exam questions and answers data loaded into the application.
+- `exams_data.js`: The exam questions and answers data loaded into the application (fetched from GitHub).
+- `aws_clf_02_data.js`: Additional exam questions and answers extracted locally from a PDF.
 - `download_exams.py`: A Python script that scrapes/downloads exam questions from an external GitHub repository and parses them into `exams_data.js`.
+- `parse_pdf_to_js.py`: A Python script that parses a local PDF containing exam questions (`AWS-CLF-02 Questions.pdf`) and generates the `aws_clf_02_data.js` file.
 
 ## How to Run Locally
 
@@ -34,12 +36,24 @@ You don't need any complex build tools to run this application. It relies on van
 
 If you need to fetch the latest practice exams or refresh the data:
 
+### Fetching from GitHub
+
 1. Ensure you have Python installed.
 2. Run the scraping script:
    ```bash
    python download_exams.py
    ```
 3. The script will download markdown files, parse them, and generate a new `exams_data.js` file automatically.
+
+### Parsing from PDF
+
+1. Ensure you have Python installed along with the `PyPDF2` library.
+2. Ensure `AWS-CLF-02 Questions.pdf` is present in the directory.
+3. Run the PDF parsing script:
+   ```bash
+   python parse_pdf_to_js.py
+   ```
+4. The script will extract questions from the PDF and generate the `aws_clf_02_data.js` file.
 
 ## Disclaimer
 
