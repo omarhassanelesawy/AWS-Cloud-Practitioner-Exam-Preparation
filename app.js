@@ -1,5 +1,5 @@
 /**
- * AWS Cloud Practitioner Practice Exam Simulator
+ * AWS Certification Practice Exam Simulator
  * Main Application Logic
  */
 
@@ -69,6 +69,18 @@
         reviewList: $("#review-list"),
     };
 
+    const examCatalog = [
+        ...EXAMS_DATA,
+        ...AWS_AIF_C01_DATA,
+        ...AWS_AIF_C01_TEST_1_DATA,
+        ...AWS_AIF_C01_TEST_2_DATA,
+        ...AWS_AIF_C01_TEST_3_DATA,
+        ...AWS_AIF_C01_TEST_4_DATA,
+        ...AWS_AIF_C01_TEST_5_DATA,
+        ...AWS_AIF_C01_TEST_6_DATA,
+        ...AWS_AIF_C01_TEST_7_DATA,
+    ];
+
     // ===== Initialize =====
     function init() {
         renderExamGrid();
@@ -94,12 +106,12 @@
     // ===== Exam Grid =====
     function renderExamGrid() {
         dom.examGrid.innerHTML = "";
-        EXAMS_DATA.forEach((exam, index) => {
+        examCatalog.forEach((exam, index) => {
             const card = document.createElement("div");
             card.className = "exam-card";
             card.dataset.index = index;
 
-            const historyKey = `exam-${exam.examNumber}`;
+            const historyKey = getExamStorageKey(exam);
             const pastResult = state.history[historyKey];
             const progress = loadProgress(index);
 
@@ -128,7 +140,7 @@
 
             card.innerHTML = `
                 ${badgeHtml}
-                <div class="exam-card-number">Exam ${exam.examNumber}</div>
+                <div class="exam-card-number">${String(exam.examNumber).startsWith("AIF-C01") ? exam.examNumber : `Exam ${exam.examNumber}`}</div>
                 <div class="exam-card-title">${exam.title}</div>
                 <div class="exam-card-info">
                     <span>
@@ -148,8 +160,8 @@
     }
 
     function updateStats() {
-        const total = EXAMS_DATA.length;
-        const totalQ = EXAMS_DATA.reduce((sum, e) => sum + e.totalQuestions, 0);
+        const total = examCatalog.length;
+        const totalQ = examCatalog.reduce((sum, e) => sum + e.totalQuestions, 0);
         const completed = Object.keys(state.history).length;
         dom.totalExams.textContent = total;
         dom.totalQuestions.textContent = totalQ;
@@ -183,6 +195,10 @@
         localStorage.removeItem(progressKey);
     }
 
+    function getExamStorageKey(exam) {
+        return `exam-${exam.examNumber}`;
+    }
+
     // ===== Start Exam =====
     function startExam(examIndex) {
         state.currentExamIndex = examIndex;
@@ -201,7 +217,7 @@
             state.timerSeconds = 0;
         }
 
-        const exam = EXAMS_DATA[examIndex];
+        const exam = examCatalog[examIndex];
         dom.examTitle.textContent = exam.title;
 
         buildQuestionNav(exam);
@@ -249,7 +265,7 @@
             if (i === state.currentQuestionIndex) {
                 btn.classList.add("active");
             } else if (state.checkedQuestions[i]) {
-                const exam = EXAMS_DATA[state.currentExamIndex];
+                const exam = examCatalog[state.currentExamIndex];
                 const q = exam.questions[i];
                 const userAns = state.userAnswers[i] || [];
                 const isCorrect = arraysEqual(userAns.sort(), q.correct.sort());
@@ -268,7 +284,7 @@
 
     // ===== Render Question =====
     function renderQuestion() {
-        const exam = EXAMS_DATA[state.currentExamIndex];
+        const exam = examCatalog[state.currentExamIndex];
         const q = exam.questions[state.currentQuestionIndex];
         const qIndex = state.currentQuestionIndex;
 
@@ -407,7 +423,7 @@
     function submitExam() {
         stopTimer();
 
-        const exam = EXAMS_DATA[state.currentExamIndex];
+        const exam = examCatalog[state.currentExamIndex];
         let correct = 0;
         let incorrect = 0;
         let skipped = 0;
@@ -433,7 +449,7 @@
         clearProgress(state.currentExamIndex);
 
         // Save to history
-        const historyKey = `exam-${exam.examNumber}`;
+        const historyKey = getExamStorageKey(exam);
         const prev = state.history[historyKey];
         state.history[historyKey] = {
             lastScore: percent,
@@ -447,7 +463,7 @@
 
     // ===== Show Results =====
     function showResults() {
-        const exam = EXAMS_DATA[state.currentExamIndex];
+        const exam = examCatalog[state.currentExamIndex];
         const r = state.examResults;
 
         dom.resultsTitle.textContent = `${exam.title} - Results`;
@@ -499,7 +515,7 @@
     }
 
     function renderReview(filter) {
-        const exam = EXAMS_DATA[state.currentExamIndex];
+        const exam = examCatalog[state.currentExamIndex];
         dom.reviewList.innerHTML = "";
 
         exam.questions.forEach((q, i) => {
@@ -604,7 +620,7 @@
         });
 
         dom.btnNext.addEventListener("click", () => {
-            const exam = EXAMS_DATA[state.currentExamIndex];
+            const exam = examCatalog[state.currentExamIndex];
             if (state.currentQuestionIndex < exam.questions.length - 1) {
                 state.currentQuestionIndex++;
                 renderQuestion();
